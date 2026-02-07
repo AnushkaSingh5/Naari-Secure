@@ -280,34 +280,41 @@ const Index = () => {
                   <Shield className="mr-2 w-6 h-6" /> {t('viewSafeZones')}
                 </Button>
               </Link>
-              <button onClick={triggerFakeCall} className="block w-full">
-                <Button variant="secondary" className="w-full h-16 text-lg bg-indigo-100 text-indigo-700 hover:bg-indigo-200" size="lg">
-                  <Phone className="mr-2 w-6 h-6" /> Fake Call
-                </Button>
-              </button>
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={triggerFakeCall}
+                  className="flex items-center justify-center gap-3 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-all h-24"
+                >
+                  <Phone className="w-7 h-7" />
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-70">Security</p>
+                    <p className="text-lg font-bold">Fake Call</p>
+                  </div>
+                </button>
 
-              {/* Voice Protection Toggle Quick Action */}
-              <button
-                onClick={() => {
-                  setVoiceEnabled(!voiceEnabled);
-                  toast({
-                    title: !voiceEnabled ? "Voice Protection ON" : "Voice Protection OFF",
-                    description: !voiceEnabled ? "Just say 'HELP' or 'BACHAO' to trigger SOS" : "Voice commands disabled",
-                  });
-                }}
-                className={cn(
-                  "w-full flex items-center justify-center gap-4 p-5 rounded-2xl border transition-all h-20",
-                  voiceEnabled
-                    ? "bg-indigo-600 border-indigo-500 text-white shadow-lg animate-pulse-subtle"
-                    : "bg-indigo-50 border-indigo-200 text-indigo-700 hover:bg-indigo-100"
-                )}
-              >
-                {voiceEnabled ? <Mic className="w-8 h-8" /> : <MicOff className="w-8 h-8 opacity-50" />}
-                <div className="text-left">
-                  <p className="text-xs font-black uppercase tracking-widest leading-none">Voice Protection</p>
-                  <p className="text-lg font-bold">{voiceEnabled ? "ACTIVE (Listening...)" : "ENABLE MIC"}</p>
-                </div>
-              </button>
+                {/* Voice Protection Toggle Quick Action */}
+                <button
+                  onClick={() => {
+                    setVoiceEnabled(!voiceEnabled);
+                    toast({
+                      title: !voiceEnabled ? "Voice Protection ON" : "Voice Protection OFF",
+                      description: !voiceEnabled ? "Just say 'HELP' or 'BACHAO' to trigger SOS" : "Voice commands disabled",
+                    });
+                  }}
+                  className={cn(
+                    "flex items-center justify-center gap-3 p-4 rounded-2xl border transition-all h-24",
+                    voiceEnabled
+                      ? "bg-emerald-600 border-emerald-500 text-white shadow-lg animate-pulse-subtle"
+                      : "bg-red-50 border-red-200 text-red-600 hover:bg-red-100"
+                  )}
+                >
+                  {voiceEnabled ? <Mic className="w-7 h-7" /> : <MicOff className="w-7 h-7 opacity-50" />}
+                  <div className="text-left">
+                    <p className="text-[10px] font-black uppercase tracking-widest leading-none opacity-70">Voice SOS</p>
+                    <p className="text-lg font-bold">{voiceEnabled ? "ACTIVE" : "ENABLE"}</p>
+                  </div>
+                </button>
+              </div>
 
               {/* SOS History (Girl) */}
               <Card>
