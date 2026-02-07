@@ -276,7 +276,7 @@ const Index = () => {
                 </Button>
               </Link>
               <Link to="/safe-zones" className="block w-full">
-                <Button variant="outline" className="w-full h-16 text-lg" size="lg">
+                <Button className="w-full h-16 text-lg bg-accent text-accent-foreground hover:bg-accent/90 border-none shadow-md shadow-accent/20" size="lg">
                   <Shield className="mr-2 w-6 h-6" /> {t('viewSafeZones')}
                 </Button>
               </Link>
@@ -315,61 +315,70 @@ const Index = () => {
                   </div>
                 </button>
               </div>
+            </div>
+          </div>
+        )}
 
-              {/* SOS History (Girl) */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <ActivityHistory className="w-5 h-5 text-primary" />
-                    {t('mySOSHistory')}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {userData?.sosHistory?.length > 0 ? (
-                    <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2">
-                      {userData.sosHistory.slice().reverse().map((item: any, i: number) => (
-                        <div key={i} className="p-3 border rounded-xl bg-gray-50/50 space-y-2">
-                          <div className="flex justify-between items-start">
-                            <div>
-                              <p className="text-sm font-bold text-gray-900">{new Date(item.startTime).toLocaleDateString()}</p>
-                              <p className="text-xs text-muted-foreground">{new Date(item.startTime).toLocaleTimeString()} - {new Date(item.endTime).toLocaleTimeString()}</p>
-                            </div>
-                            <span className="px-2 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase">
-                              {item.duration === 'UNKNOWN' ? t('unknown') : item.duration}
-                            </span>
+        {/* --- SOS HISTORY (FULL WIDTH) --- */}
+        {user?.role === 'girl' && (
+          <div className="mb-16">
+            <Card className="w-full">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ActivityHistory className="w-5 h-5 text-primary" />
+                  {t('mySOSHistory')}
+                </CardTitle>
+                <CardDescription>Comprehensive record of all emergency triggers and locations.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {userData?.sosHistory?.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {userData.sosHistory.slice().reverse().map((item: any, i: number) => (
+                      <div key={i} className="p-4 border rounded-2xl bg-gray-50/50 space-y-3 hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
+                        <div className="flex justify-between items-start">
+                          <div>
+                            <p className="text-sm font-bold text-gray-900">{new Date(item.startTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                            <p className="text-xs text-muted-foreground font-medium mt-1">
+                              {new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              {" → "}
+                              {new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            </p>
                           </div>
+                          <span className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider">
+                            {item.duration === 'UNKNOWN' ? t('unknown') : item.duration}
+                          </span>
+                        </div>
+                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                           {item.startLocation && (
                             <a
                               href={`https://www.google.com/maps?q=${item.startLocation.lat},${item.startLocation.lng}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-[10px] text-primary hover:underline flex items-center gap-1"
+                              className="text-xs text-primary font-bold hover:underline flex items-center gap-1.5"
                             >
-                              <MapPin className="w-3 h-3" /> {t('viewStartLocation')}
+                              <MapPin className="w-4 h-4" /> {t('viewStartLocation')}
                             </a>
                           )}
+                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recorded</div>
                         </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Clock className="w-8 h-8 mx-auto mb-2 opacity-20" />
-                      <p className="text-sm">{t('noEmergencyHistory')}</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground bg-gray-50/50 rounded-2xl border border-dashed">
+                    <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                    <p className="text-lg font-medium">{t('noEmergencyHistory')}</p>
+                    <p className="text-sm opacity-70">Your emergency history will appear here once an SOS is triggered.</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           </div>
         )}
-
 
         {/* --- GUARDIAN DASHBOARD --- */}
         {user?.role === 'guardian' && (
           <div className="grid grid-cols-1 gap-8 mb-16 max-w-4xl mx-auto">
-            {/* Accept Invite */}
-
-
             {/* My Wards */}
             <Card>
               <CardHeader>
@@ -428,11 +437,6 @@ const Index = () => {
                                     <Battery className="w-2 h-2" /> Low Bat: {ward.batteryLevel}%
                                   </span>
                                 )}
-                                {((ward.batteryLevel || 100) > 20 && (ward.batteryLevel || 100) < 100) && (
-                                  <span className="text-[10px] font-medium text-gray-400">
-                                    {ward.batteryLevel}%
-                                  </span>
-                                )}
                               </p>
                               <p className="text-sm font-medium text-muted-foreground">{ward.email}</p>
                             </div>
@@ -440,43 +444,39 @@ const Index = () => {
                           <Link to={`/track/${ward._id}`} className="ml-auto">
                             <Button size="lg" className="px-8 font-bold shadow-lg shadow-primary/20">{t('track')}</Button>
                           </Link>
-                          {/* Travel Status for Guardian View */}
-                          {ward.travelMode?.isActive && (
-                            <div className={cn(
-                              "mt-3 p-3 border rounded-lg animate-in fade-in slide-in-from-top-2",
-                              (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged)
-                                ? "bg-red-50 border-red-200"
-                                : "bg-blue-50 border-blue-200"
-                            )}>
-                              <div className="flex items-center justify-between">
-                                <div className={cn(
-                                  "flex items-center gap-2 font-bold",
-                                  (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-700" : "text-blue-700"
-                                )}>
-                                  <Navigation className="w-4 h-4 animate-pulse" />
-                                  <span>{(new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? t('userDelayed') : t('userTravelling')}</span>
-                                </div>
-                                {new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged && (
-                                  <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] uppercase font-black rounded-full animate-bounce">
-                                    {t('late')}
-                                  </span>
-                                )}
-                                {ward.travelMode.delayAcknowledged && new Date() > new Date(ward.travelMode.expectedArrivalTime) && (
-                                  <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] uppercase font-black rounded-full">
-                                    Acknowledged
-                                  </span>
-                                )}
-                              </div>
-                              <div className={cn(
-                                "flex items-center gap-2 mt-1 pl-6 text-sm font-medium",
-                                (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-600" : "text-blue-600"
-                              )}>
-                                <Clock className="w-3 h-3" />
-                                <span>{t('expectedArrival')}: {ward.travelMode.expectedArrivalTime ? format(new Date(ward.travelMode.expectedArrivalTime), 'h:mm a') : t('calculating')}</span>
-                              </div>
-                            </div>
-                          )}
                         </div>
+
+                        {/* Travel Status for Guardian View */}
+                        {ward.travelMode?.isActive && (
+                          <div className={cn(
+                            "mt-3 p-3 border rounded-lg animate-in fade-in slide-in-from-top-2",
+                            (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged)
+                              ? "bg-red-50 border-red-200"
+                              : "bg-blue-50 border-blue-200"
+                          )}>
+                            <div className="flex items-center justify-between">
+                              <div className={cn(
+                                "flex items-center gap-2 font-bold",
+                                (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-700" : "text-blue-700"
+                              )}>
+                                <Navigation className="w-4 h-4 animate-pulse" />
+                                <span>{(new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? t('userDelayed') : t('userTravelling')}</span>
+                              </div>
+                              {new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged && (
+                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] uppercase font-black rounded-full animate-bounce">
+                                  {t('late')}
+                                </span>
+                              )}
+                            </div>
+                            <div className={cn(
+                              "flex items-center gap-2 mt-1 pl-6 text-sm font-medium",
+                              (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-600" : "text-blue-600"
+                            )}>
+                              <Clock className="w-3 h-3" />
+                              <span>{t('expectedArrival')}: {ward.travelMode.expectedArrivalTime ? format(new Date(ward.travelMode.expectedArrivalTime), 'h:mm a') : t('calculating')}</span>
+                            </div>
+                          </div>
+                        )}
 
                         {/* SOS History for Guardian View */}
                         {ward.sosHistory?.length > 0 && (
@@ -484,7 +484,7 @@ const Index = () => {
                             <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
                               <ActivityHistory className="w-3 h-3" /> {t('recentActivity')}
                             </p>
-                            <div className="space-y-2 max-h-[200px] overflow-y-auto pr-1">
+                            <div className="space-y-2">
                               {ward.sosHistory.slice().reverse().map((history: any, hIdx: number) => (
                                 <div key={hIdx} className="p-3 border rounded-xl bg-white space-y-2">
                                   <div className="flex justify-between items-start">
@@ -538,9 +538,8 @@ const Index = () => {
             </Card>
           </div>
         )}
-
       </div>
-    </Layout >
+    </Layout>
   );
 };
 
