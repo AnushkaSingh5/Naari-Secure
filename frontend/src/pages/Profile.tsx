@@ -25,7 +25,7 @@ const Profile = () => {
 
   return (
     <Layout>
-      <div className="container px-4 py-6">
+      <div className="container px-4 py-6 max-w-2xl mx-auto">
         {/* Profile Header */}
         <div className="elevated-card p-6 mb-6">
           <div className="flex items-center gap-4">
@@ -42,21 +42,6 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Language Section */}
-        <div className="elevated-card p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-                <Globe className="w-5 h-5 text-secondary-foreground" />
-              </div>
-              <div>
-                <h3 className="font-semibold text-foreground">{t('language')}</h3>
-                <p className="text-xs text-muted-foreground">English / हिंदी</p>
-              </div>
-            </div>
-            <LanguageSwitch />
-          </div>
-        </div>
 
         {/* Cards Grid (Only for Girls) */}
         {user?.role === 'girl' && (
@@ -65,12 +50,6 @@ const Profile = () => {
           </div>
         )}
 
-        {/* Travel History (Only for Girls) */}
-        {user?.role === 'girl' && (
-          <div className="mb-6">
-            <TravelHistoryCard />
-          </div>
-        )}
 
         {/* Menu Items */}
         <div className="elevated-card overflow-hidden mb-6">
