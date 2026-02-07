@@ -60,16 +60,14 @@ const Travel = () => {
   useEffect(() => {
     const checkNightMode = () => {
       const hour = new Date().getHours();
-      // Night is 9 PM (21) to 6 AM (6)
       setIsNightMode(hour >= 21 || hour < 6);
     };
 
     checkNightMode();
-    const interval = setInterval(checkNightMode, 60000); // Check every minute
+    const interval = setInterval(checkNightMode, 60000);
     return () => clearInterval(interval);
   }, []);
 
-  // Fetch Frequent Places & History
   const fetchPlaces = async () => {
     const token = localStorage.getItem('token');
     if (token) {
@@ -86,7 +84,6 @@ const Travel = () => {
 
   useEffect(() => {
     fetchPlaces();
-    // Get Current Loc for ETA
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(pos => {
         setCurrentLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
@@ -94,7 +91,6 @@ const Travel = () => {
     }
   }, []);
 
-  // Reset state and fetch history when Travel Mode turns OFF
   useEffect(() => {
     if (!isTravelModeOn) {
       setSelectedDest(null);
@@ -103,13 +99,13 @@ const Travel = () => {
       setLatePromptShown(false);
       setMidJourneyChecked(false);
       setIsMidJourneyCheck(false);
-      fetchPlaces(); // Refresh history
+      fetchPlaces();
     }
   }, [isTravelModeOn]);
 
   const calculateETA = (destLat: number, destLng: number) => {
-    if (!currentLoc) return 30; // Default
-    const R = 6371; // km
+    if (!currentLoc) return 30;
+    const R = 6371;
     const dLat = (destLat - currentLoc.lat) * Math.PI / 180;
     const dLon = (destLng - currentLoc.lng) * Math.PI / 180;
     const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
@@ -117,17 +113,13 @@ const Travel = () => {
       Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     const dist = R * c;
-    // Speed 30km/h - exact time
     return Math.ceil((dist / 30) * 60);
   };
 
   const handleStartTravel = () => {
     if (!selectedDest) return;
-
-    // Check if it's a frequent place
     const place = frequentPlaces.find(p => p._id === selectedDest);
     if (place) {
-      // Logic: ETA is based on distance from CURRENT location (currentLoc) to TARGET (place.lat/lng)
       const eta = (currentLoc) ? calculateETA(place.lat, place.lng) : 30;
       startTravelMode(place.name, eta, { lat: place.lat, lng: place.lng });
       return;
@@ -135,14 +127,11 @@ const Travel = () => {
 
     const dest = destinations.find(d => d.id === selectedDest);
     let name = t(dest?.label || 'custom');
-    let coords = null; // Default null if static destination (e.g. Home) coords are unknown in this file
+    let coords = null;
 
     if (selectedDest === 'custom') {
       const customNameInput = document.getElementById('onetime-search') as HTMLInputElement;
       if (customNameInput && customNameInput.value) name = customNameInput.value;
-      // If we used the map picker, currentLoc holds the selected location momentarily? 
-      // No, looking at LocationPicker logic in this file:
-      // onSelect sets setCurrentLoc to picked location if pickingFor === 'onetime'
       coords = currentLoc;
     }
 
@@ -150,57 +139,33 @@ const Travel = () => {
     startTravelMode(name, time, coords || undefined);
   };
 
-  const saveCustomPlace = async () => {
-    if (!newPlaceName || !currentLoc) return;
-    const token = localStorage.getItem('token');
-    // ... (logic handled in modal inline)
-  };
-
   const handleSafe = async () => {
     const now = new Date();
-    // Only block the "Late" prompt if we are actually currently late
     if (now > expectedArrivalTime!) {
       await acknowledgeDelay();
-      setLatePromptShown(false); // Reset so it can trigger again if the NEW extended time is exceeded
+      await extendTravelTime(5); // Add 5 mins of buffer as requested
+      setLatePromptShown(false); // Reset so it can trigger again after the 5 min buffer passes
     }
     setShowSafetyCheck(false);
   };
 
   const handleSOS = async () => {
-    // 1. Activate Unified SOS (handles state + backend + location automatically)
     activateSOS();
     setShowSafetyCheck(false);
-    navigate('/'); // Redirect to home/SOS screen
+    navigate('/');
   };
 
-  // Monitor Travel Time & Mid-Journey Check
   useEffect(() => {
     if (!isTravelModeOn || !expectedArrivalTime || isSosActive) return;
 
-    // Retrieve start time from local storage or context if possible to calculate mid-point
-    // For now, simpler approach: If we are ~50% remaining time? 
-    // Better: We track remaining time. If remaining time < initial_duration / 2 AND !midJourneyChecked
-    // Since we don't have initial duration easily here without passing it, let's look at a simpler rule:
-    // If IS NIGHT MODE, check roughly every few minutes? 
-    // Or simpler: Trigger arbitrary check after 1 minute of travel for Demo purposes if Night Mode?
-    // Let's implement the specific request: "15 min pe popup if total is 30" -> Mid point.
-
-    // We need start time to calculate mid-point accurately. 
-    // Assuming start time was 'now' when we loaded this component if tracking started recently?
-    // Let's rely on travel sessions from context?
-
     const interval = setInterval(() => {
       const now = new Date();
-
-      // 1. LATE CHECK (Existing)
-      // Only show safety check if NOT already shown, NOT already SOS active, time passed, and NOT already dismissed
       if (now > expectedArrivalTime && !showSafetyCheck && !isSosActive && !latePromptShown) {
         setIsMidJourneyCheck(false);
         setShowSafetyCheck(true);
+        setLatePromptShown(true); // Flag that we've shown the prompt for this delay period
       }
 
-      // 2. NIGHT MODE MID-JOURNEY CHECK
-      // Trigger mid-journey check if Night Mode is active AND we haven't checked yet
       if (isNightMode && !midJourneyChecked && !showSafetyCheck && !isSosActive && travelSessions.length > 0) {
         const activeSession = travelSessions[0];
         if (activeSession.status === 'active') {
@@ -208,16 +173,13 @@ const Travel = () => {
           const end = expectedArrivalTime.getTime();
           const totalDuration = end - start;
           const elapsed = now.getTime() - start;
-
-          // If we have passed 50% of the time, trigger the mid-journey nudge
           if (elapsed >= totalDuration / 2 && elapsed < totalDuration) {
             setIsMidJourneyCheck(true);
             setShowSafetyCheck(true);
-            setMidJourneyChecked(true); // Ensure it only pops up once at mid-way
+            setMidJourneyChecked(true);
           }
         }
       }
-
     }, 1000);
 
     return () => clearInterval(interval);
@@ -230,9 +192,7 @@ const Travel = () => {
         Travel History
       </h3>
       <div className="space-y-3">
-        {/* @ts-ignore */}
         {travelHistory && travelHistory.length > 0 ? (
-          /* @ts-ignore */
           travelHistory.slice().reverse().slice(0, 5).map((trip: any, idx: number) => (
             <div key={idx} className="p-3 bg-gray-50 rounded-lg border flex justify-between items-center">
               <div>
@@ -245,7 +205,6 @@ const Travel = () => {
                 </p>
               </div>
               <div className="flex flex-col items-end gap-1">
-                {/* Status Badge */}
                 {trip.status === 'sos' ? (
                   <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] font-black rounded-full uppercase animate-pulse">
                     SOS TRIGGERED
@@ -256,15 +215,11 @@ const Travel = () => {
                     {trip.status === 'completed' ? 'Arrived Safely' : trip.status}
                   </span>
                 )}
-
-                {/* Delayed Badge */}
                 {trip.delayed && (
                   <span className="px-2 py-0.5 bg-orange-100 text-orange-700 text-[10px] font-bold rounded-full uppercase flex items-center gap-1">
                     <Clock className="w-3 h-3" /> Delayed
                   </span>
                 )}
-
-                {/* On Time Badge (if completed and not delayed) */}
                 {trip.status === 'completed' && !trip.delayed && (
                   <span className="text-[10px] text-green-600 font-medium flex items-center gap-1">
                     <CheckCircle className="w-3 h-3" /> On Time
@@ -282,36 +237,34 @@ const Travel = () => {
 
   return (
     <Layout>
-      {showMapPicker && (
-        <LocationPicker
-          onSelect={(loc) => {
-            const eta = calculateETA(loc.lat, loc.lng);
-            if (pickingFor === 'custom') {
-              setNewPlaceName(loc.name.split(',')[0]);
-              setCurrentLoc({ lat: loc.lat, lng: loc.lng });
-              setShowCustomModal(true); // Ensure modal is visible
-            } else {
-              setSelectedDest('custom');
-              setCustomTime(eta.toString());
-              setNewPlaceName(loc.name); // Using as temp holder
-              // Temporarily use currentLoc to store target for One-Time trip?
-              // Ideally allow independent target state, but for now re-using currentLoc as "Target" for calculations
-              setCurrentLoc({ lat: loc.lat, lng: loc.lng });
-            }
-            setShowMapPicker(false);
-          }}
-          onClose={() => setShowMapPicker(false)}
-        />
-      )}
-      <div className="container px-4 py-6">
-        <div className="mb-6">
+      <div className="container px-4 py-6 max-w-4xl mx-auto">
+        {showMapPicker && (
+          <LocationPicker
+            onSelect={(loc) => {
+              const eta = calculateETA(loc.lat, loc.lng);
+              if (pickingFor === 'custom') {
+                setNewPlaceName(loc.name.split(',')[0]);
+                setCurrentLoc({ lat: loc.lat, lng: loc.lng });
+                setShowCustomModal(true);
+              } else {
+                setSelectedDest('custom');
+                setCustomTime(eta.toString());
+                setNewPlaceName(loc.name);
+                setCurrentLoc({ lat: loc.lat, lng: loc.lng });
+              }
+              setShowMapPicker(false);
+            }}
+            onClose={() => setShowMapPicker(false)}
+          />
+        )}
+
+        <div className="mb-6 text-center">
           <h1 className="text-2xl font-bold text-foreground mb-1">{t('travelMode')}</h1>
           <p className="text-sm text-muted-foreground">Stay safe on your journey</p>
         </div>
 
         {!isTravelModeOn ? (
           <div className="space-y-6">
-            {/* Travel Mode Toggle */}
             {isNightMode && (
               <div className="mb-6 p-4 bg-indigo-950 rounded-xl border border-indigo-800 shadow-lg animate-in fade-in slide-in-from-top-4">
                 <div className="flex items-center gap-3">
@@ -339,7 +292,6 @@ const Travel = () => {
                 </div>
               </div>
 
-              {/* Destination Selection */}
               <div className="mb-6">
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-sm font-medium text-foreground">{t('selectDestination')}</p>
@@ -350,8 +302,7 @@ const Travel = () => {
                     <Plus className="w-3 h-3" /> Add New
                   </button>
                 </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {/* Frequent Places */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {frequentPlaces.map((place) => {
                     const isSelected = selectedDest === place._id;
                     return (
@@ -359,7 +310,7 @@ const Travel = () => {
                         <button
                           onClick={() => setSelectedDest(place._id)}
                           className={cn(
-                            'w-full p-4 rounded-xl border-2 transition-all text-left pr-8', // Added padding right for delete button
+                            'w-full p-4 rounded-xl border-2 transition-all text-left pr-8',
                             isSelected
                               ? 'border-primary bg-primary/5'
                               : 'border-border hover:border-primary/50 bg-card'
@@ -369,13 +320,10 @@ const Travel = () => {
                           <p className="font-medium text-foreground truncate">{place.name}</p>
                           <p className="text-xs text-muted-foreground truncate">{calculateETA(place.lat, place.lng)} min (ETA)</p>
                         </button>
-                        {/* Delete Button */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            const confirm = window.confirm("Delete this place?");
-                            if (confirm) {
-                              // Call Delete API
+                            if (window.confirm("Delete this place?")) {
                               const token = localStorage.getItem('token');
                               fetch(`http://localhost:5001/api/auth/delete-place/${place._id}`, {
                                 method: 'DELETE',
@@ -391,7 +339,6 @@ const Travel = () => {
                     );
                   })}
 
-                  {/* Static "Custom" Option for non-saved tracking */}
                   <button
                     onClick={() => {
                       setSelectedDest('custom');
@@ -412,12 +359,10 @@ const Travel = () => {
                 </div>
               </div>
 
-              {/* Custom Place Modal */}
               {showCustomModal && (
                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                   <div className="bg-white rounded-2xl w-full max-w-sm p-6 space-y-4">
                     <h3 className="font-bold text-lg">Add New Destination</h3>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Place Name</label>
                       <input
@@ -427,7 +372,6 @@ const Travel = () => {
                         onChange={(e) => setNewPlaceName(e.target.value)}
                       />
                     </div>
-
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Location</label>
                       <button
@@ -440,9 +384,7 @@ const Travel = () => {
                         <MapPin className="w-4 h-4" />
                         {currentLoc ? "Change Location" : "Select on Map"}
                       </button>
-                      {currentLoc && <p className="text-xs text-green-600">Location selected!</p>}
                     </div>
-
                     <div className="flex gap-2 pt-2">
                       <button onClick={() => setShowCustomModal(false)} className="flex-1 py-3 text-sm font-bold text-gray-500">Cancel</button>
                       <button
@@ -462,67 +404,53 @@ const Travel = () => {
                             setFrequentPlaces(updatedPlaces);
                             setShowCustomModal(false);
                             setNewPlaceName('');
-
-                            if (navigator.geolocation) {
-                              navigator.geolocation.getCurrentPosition(pos => {
-                                setCurrentLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-                              });
-                            }
                           } catch (e) { console.error(e); }
                         }}
                         disabled={!currentLoc || !newPlaceName}
                         className="flex-1 py-3 bg-primary text-white rounded-xl font-bold disabled:opacity-50"
                       >
-                        Save Destination
+                        Save
                       </button>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* Custom Time Input (Only for One-Time Trip) */}
               {selectedDest === 'custom' && (
                 <div className="mb-6 space-y-4">
-                  <div className="space-y-2">
-                    <div className="p-4 bg-gray-50 rounded-xl border flex items-center justify-between">
-                      <div className="overflow-hidden">
-                        <p className="text-xs text-muted-foreground uppercase tracking-wider font-bold">Destination</p>
-                        <p className="font-bold text-lg truncate" title={newPlaceName || "Select on Map"}>
-                          {newPlaceName || "Select on Map"}
-                        </p>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setPickingFor('onetime');
-                          setShowMapPicker(true);
-                        }}
-                        className="p-2 bg-white border rounded-lg shadow-sm hover:bg-gray-50"
-                      >
-                        <MapPin className="w-5 h-5 text-primary" />
-                      </button>
+                  <div className="p-4 bg-gray-50 rounded-xl border flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground uppercase font-bold">Destination</p>
+                      <p className="font-bold text-lg truncate max-w-[200px]">{newPlaceName || "Selected on Map"}</p>
                     </div>
+                    <button
+                      onClick={() => {
+                        setPickingFor('onetime');
+                        setShowMapPicker(true);
+                      }}
+                      className="p-2 bg-white border rounded-lg"
+                    >
+                      <MapPin className="w-5 h-5 text-primary" />
+                    </button>
                   </div>
-
                   <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
                     <label className="text-sm font-bold text-blue-900 block mb-1">
                       <Clock className="w-4 h-4 inline mr-2" />
-                      Estimated Time (Exact)
+                      Estimated Time
                     </label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
                         value={customTime}
                         readOnly
-                        className="w-full bg-transparent border-blue-200 rounded-lg p-2 text-3xl font-black text-blue-950 outline-none"
+                        className="w-full bg-transparent p-2 text-3xl font-black text-blue-950 outline-none"
                       />
                       <span className="text-sm font-medium text-blue-700">min</span>
                     </div>
-                    <p className="text-xs text-blue-600 mt-1">Calculated automatically based on distance.</p>
                   </div>
                 </div>
               )}
 
-              {/* Start Button */}
               <button
                 onClick={handleStartTravel}
                 disabled={!selectedDest}
@@ -535,81 +463,28 @@ const Travel = () => {
               >
                 {t('startTravelMode')}
               </button>
-
-              <button
-                onClick={() => navigate('/fake-call')}
-                className="w-full mt-3 py-3 rounded-xl bg-indigo-50 text-indigo-600 font-bold flex items-center justify-center gap-2 border border-indigo-100"
-              >
-                <Phone className="w-4 h-4" /> Fake Call
-              </button>
             </div>
 
             {renderHistory()}
 
-            {/* Info Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <BatteryCard />
+            <div className="space-y-4">
               <RiskScoreCard />
+              <BatteryCard />
             </div>
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Live Map */}
             {currentLoc && (
               <div className="h-[250px] w-full rounded-xl overflow-hidden border border-border shadow-inner">
                 <LiveRouteMap currentPos={currentLoc} destinationPos={destinationCoords} />
               </div>
             )}
-
-            {/* Active Travel Status */}
             <TravelStatusCard />
-
             {renderHistory()}
-
-            {/* Voice Protection Toggle */}
-            <button
-              onClick={() => {
-                setVoiceEnabled(!voiceEnabled);
-                toast({
-                  title: !voiceEnabled ? "Voice Protection Enabled" : "Voice Protection Disabled",
-                  description: !voiceEnabled ? "Listening for 'HELP', 'BACHAO', 'POLICE'..." : "No longer listening for voice triggers.",
-                });
-              }}
-              className={cn(
-                "w-full py-4 mb-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300",
-                voiceEnabled
-                  ? "bg-indigo-600 text-white shadow-lg shadow-indigo-200 animate-pulse-subtle"
-                  : "bg-indigo-50 text-indigo-600 border border-indigo-100"
-              )}
-            >
-              {voiceEnabled ? <Mic className="w-5 h-5" /> : <MicOff className="w-5 h-5 text-indigo-400" />}
-              {voiceEnabled ? "Voice Protection: ON" : "Enable Voice Protection 🎤"}
-            </button>
-
-            {/* Side Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <BatteryCard />
+            <div className="space-y-4">
               <RiskScoreCard />
+              <BatteryCard />
             </div>
-
-            {/* Fake Call Button (Discrete) */}
-            <button
-              onClick={() => navigate('/fake-call')}
-              className="w-full py-3 mb-3 rounded-xl bg-indigo-100 text-indigo-700 font-bold flex items-center justify-center gap-2"
-            >
-              <Phone className="w-5 h-5" /> Fake Call
-            </button>
-
-            {/* Stop Button */}
-            <button
-              onClick={async () => {
-                await stopTravelMode(true);
-                fetchPlaces(); // Refresh history immediately
-              }}
-              className="w-full py-4 rounded-xl bg-muted text-foreground font-semibold hover:bg-muted/80 transition-colors"
-            >
-              Reached Destination
-            </button>
           </div>
         )}
       </div>
@@ -620,9 +495,7 @@ const Travel = () => {
         onSafe={handleSafe}
         onSOS={handleSOS}
       />
-
-
-    </Layout >
+    </Layout>
   );
 };
 
