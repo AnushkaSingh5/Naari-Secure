@@ -1,0 +1,85 @@
+[
+  {
+    "name": "naari-guardian",
+    "collections": [
+      {
+        "name": "users",
+        "count": 0,
+        "fields": []
+      },
+      {
+        "name": "areas",
+        "count": 19,
+        "fields": [
+          "_id",
+          "state",
+          "city",
+          "area",
+          "risk_level",
+          "risk_score",
+          "lat",
+          "lng",
+          "__v"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "risk_map",
+    "collections": [
+      {
+        "name": "areas",
+        "count": 0,
+        "fields": []
+      },
+      {
+        "name": "users",
+        "count": 0,
+        "fields": []
+      }
+    ]
+  },
+  {
+    "name": "rsik_map",
+    "collections": [
+      {
+        "name": "areas",
+        "count": 3120,
+        "fields": [
+          "_id",
+          "state",
+          "city",
+          "area",
+          "risk_level",
+          "risk_score",
+          "lat",
+          "lng"
+        ]
+      }
+    ]
+  },
+  {
+    "name": "test",
+    "collections": [
+      {
+        "name": "users",
+        "count": 7,
+        "fields": [
+          "_id",
+          "name",
+          "email",
+          "password",
+          "role",
+          "emergencyContacts",
+          "wards",
+          "__v"
+        ]
+      },
+      {
+        "name": "areas",
+        "count": 0,
+        "fields": []
+      }
+    ]
+  }
+]
