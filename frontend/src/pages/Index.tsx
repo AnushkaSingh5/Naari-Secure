@@ -375,172 +375,197 @@ const Index = () => {
             </Card>
           </div>
         )}
-
         {/* --- GUARDIAN DASHBOARD --- */}
         {user?.role === 'guardian' && (
-          <div className="grid grid-cols-1 gap-8 mb-16 max-w-4xl mx-auto">
-            {/* My Wards */}
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('myWards')}</CardTitle>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setIsAudioEnabled(!isAudioEnabled)}
-                    className={cn(
-                      "flex items-center gap-2 px-3 py-1 rounded-full text-[10px] font-black tracking-tighter transition-all",
-                      isAudioEnabled ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
-                    )}
-                  >
-                    {isAudioEnabled ? <Volume2 className="w-3 h-3" /> : <VolumeX className="w-3 h-3" />}
-                    {isAudioEnabled ? t('soundEnabled') : t('enableSosSound')}
-                  </button>
-                  <CardDescription>{t('usersProtecting')}</CardDescription>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {wards.length > 0 ? (
-                  <div className="space-y-2">
-                    {wards.map((ward, i) => (
-                      <div key={i} className={cn(
-                        "p-6 rounded-2xl space-y-6 border transition-all duration-500 shadow-sm",
-                        ward.travelMode?.isActive
-                          ? "bg-blue-50/50 border-blue-400 shadow-xl shadow-blue-100 animate-pulse-subtle bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(59,130,246,0.03)_20px,rgba(59,130,246,0.03)_40px)]"
-                          : "bg-secondary/10 border-secondary/20 hover:border-primary/30"
-                      )}>
-                        {ward.travelMode?.isActive && (
-                          <div className="flex items-center gap-1.5 mb-2">
-                            <span className="relative flex h-2 w-2">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+          <div className="space-y-6 mb-16 max-w-4xl mx-auto animate-in fade-in duration-300">
+            {/* Guardian Control bar */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-muted/30 border border-border/50 p-4 rounded-2xl shadow-sm">
+              <div>
+                <h2 className="text-lg font-bold text-foreground flex items-center gap-2">
+                  <Shield className="w-5 h-5 text-primary" /> {t('myWards')}
+                </h2>
+                <p className="text-xs text-muted-foreground">{t('usersProtecting')}</p>
+              </div>
+              <button
+                onClick={() => setIsAudioEnabled(!isAudioEnabled)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-sm self-start sm:self-auto",
+                  isAudioEnabled ? "bg-green-500 text-white hover:bg-green-600" : "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                )}
+              >
+                {isAudioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+                {isAudioEnabled ? t('soundEnabled') : t('enableSosSound')}
+              </button>
+            </div>
+
+            {/* Wards Lists rendered as separate cards */}
+            {wards.length > 0 ? (
+              <div className="space-y-6">
+                {wards.map((ward, i) => (
+                  <Card key={i} className={cn(
+                    "overflow-hidden border-2 transition-all duration-300 shadow-sm",
+                    ward.travelMode?.isActive
+                      ? "border-blue-400 shadow-xl shadow-blue-50/50 bg-[repeating-linear-gradient(45deg,transparent,transparent_20px,rgba(59,130,246,0.015)_20px,rgba(59,130,246,0.015)_40px)]"
+                      : "border-border/50 hover:border-primary/20 hover:shadow-md"
+                  )}>
+                    <CardContent className="p-6 space-y-6">
+                      {ward.travelMode?.isActive && (
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="relative flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-600"></span>
+                          </span>
+                          <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{t('liveTravelModeActive')}</span>
+                          {ward.travelMode?.isNightMode && (
+                            <span className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-950 text-yellow-300 text-[10px] font-black uppercase rounded-full border border-indigo-700 ml-auto animate-pulse">
+                              <Moon className="w-3 h-3" /> {t('night')}
                             </span>
-                            <span className="text-[10px] font-black text-blue-600 uppercase tracking-widest">{t('liveTravelModeActive')}</span>
-                            {ward.travelMode?.isNightMode && (
-                              <span className="flex items-center gap-1.5 px-2 py-0.5 bg-indigo-950 text-yellow-300 text-[10px] font-black uppercase rounded-full border border-indigo-700 ml-auto">
-                                <Moon className="w-3 h-3" /> {t('night')}
+                          )}
+                        </div>
+                      )}
+
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-primary font-black text-xl shadow-sm">
+                            {ward.name[0]}
+                          </div>
+                          <div>
+                            <h3 className="font-black text-lg flex items-center gap-2 text-gray-900 tracking-tight">
+                              {ward.name}
+                              {ward.sosActive && (
+                                <span className="flex h-2.5 w-2.5 rounded-full bg-red-600 animate-pulse outline outline-offset-2 outline-red-400"></span>
+                              )}
+                              {(ward.batteryLevel || 100) <= 20 && (
+                                <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black uppercase rounded border border-red-200 animate-pulse">
+                                  <Battery className="w-2.5 h-2.5" /> Low Bat: {ward.batteryLevel}%
+                                </span>
+                              )}
+                            </h3>
+                            <p className="text-xs font-semibold text-muted-foreground">{ward.email}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3 w-full sm:w-auto self-end sm:self-center">
+                          {ward.phone && (
+                            <a 
+                              href={`tel:${ward.phone}`} 
+                              className="p-3 bg-secondary text-secondary-foreground rounded-2xl hover:bg-secondary/80 transition-colors border border-border/40"
+                              title="Call Ward"
+                            >
+                              <Phone className="w-4 h-4" />
+                            </a>
+                          )}
+                          <Link to={`/track/${ward._id}`} className="flex-1 sm:flex-initial">
+                            <Button size="lg" className="w-full sm:w-auto px-6 font-bold shadow-sm">{t('track')}</Button>
+                          </Link>
+                        </div>
+                      </div>
+
+                      {/* Travel Status for Guardian View */}
+                      {ward.travelMode?.isActive && (
+                        <div className={cn(
+                          "p-3 border rounded-xl animate-in fade-in slide-in-from-top-2",
+                          (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged)
+                            ? "bg-red-50 border-red-200 animate-pulse"
+                            : "bg-blue-50 border-blue-200"
+                        )}>
+                          <div className="flex items-center justify-between">
+                            <div className={cn(
+                              "flex items-center gap-2 font-bold",
+                              (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-700" : "text-blue-700"
+                            )}>
+                              <Navigation className="w-4 h-4 animate-pulse" />
+                              <span>{(new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? t('userDelayed') : t('userTravelling')}</span>
+                            </div>
+                            {new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged && (
+                              <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] uppercase font-black rounded-full animate-bounce">
+                                {t('late')}
                               </span>
                             )}
                           </div>
-                        )}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-5">
-                            <div className="w-16 h-16 rounded-2xl bg-primary/20 flex items-center justify-center text-primary font-bold text-2xl shadow-inner border border-primary/10">
-                              {ward.name[0]}
-                            </div>
-                            <div className="space-y-1">
-                              <p className="font-black text-xl flex items-center gap-3 text-gray-900 tracking-tight">
-                                {ward.name}
-                                {ward.sosActive && (
-                                  <span className="flex h-2 w-2 rounded-full bg-red-600 animate-pulse outline outline-offset-2 outline-red-400"></span>
-                                )}
-                                {(ward.batteryLevel || 100) <= 20 && (
-                                  <span className="flex items-center gap-1 px-1.5 py-0.5 bg-red-100 text-red-600 text-[8px] font-black uppercase rounded border border-red-200 animate-pulse">
-                                    <Battery className="w-2 h-2" /> Low Bat: {ward.batteryLevel}%
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-sm font-medium text-muted-foreground">{ward.email}</p>
-                            </div>
-                          </div>
-                          <Link to="/safe-zones" className="ml-auto">
-                            <Button size="lg" className="px-8 font-bold shadow-lg shadow-primary/20">{t('track')}</Button>
-                          </Link>
-                        </div>
-
-                        {/* Travel Status for Guardian View */}
-                        {ward.travelMode?.isActive && (
                           <div className={cn(
-                            "mt-3 p-3 border rounded-lg animate-in fade-in slide-in-from-top-2",
-                            (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged)
-                              ? "bg-red-50 border-red-200"
-                              : "bg-blue-50 border-blue-200"
+                            "flex items-center gap-2 mt-1 pl-6 text-sm font-medium",
+                            (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-600" : "text-blue-600"
                           )}>
-                            <div className="flex items-center justify-between">
-                              <div className={cn(
-                                "flex items-center gap-2 font-bold",
-                                (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-700" : "text-blue-700"
-                              )}>
-                                <Navigation className="w-4 h-4 animate-pulse" />
-                                <span>{(new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? t('userDelayed') : t('userTravelling')}</span>
-                              </div>
-                              {new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged && (
-                                <span className="px-2 py-0.5 bg-red-600 text-white text-[10px] uppercase font-black rounded-full animate-bounce">
-                                  {t('late')}
-                                </span>
-                              )}
-                            </div>
-                            <div className={cn(
-                              "flex items-center gap-2 mt-1 pl-6 text-sm font-medium",
-                              (new Date() > new Date(ward.travelMode.expectedArrivalTime) && !ward.travelMode.delayAcknowledged) ? "text-red-600" : "text-blue-600"
-                            )}>
-                              <Clock className="w-3 h-3" />
-                              <span>{t('expectedArrival')}: {ward.travelMode.expectedArrivalTime ? format(new Date(ward.travelMode.expectedArrivalTime), 'h:mm a') : t('calculating')}</span>
-                            </div>
+                            <Clock className="w-3 h-3" />
+                            <span>{t('expectedArrival')}: {ward.travelMode.expectedArrivalTime ? format(new Date(ward.travelMode.expectedArrivalTime), 'h:mm a') : t('calculating')}</span>
                           </div>
-                        )}
+                        </div>
+                      )}
 
-                        {/* SOS History for Guardian View */}
-                        {ward.sosHistory?.length > 0 && (
-                          <div className="pt-3 border-t border-gray-100">
-                            <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1">
-                              <ActivityHistory className="w-3 h-3" /> {t('recentActivity')}
-                            </p>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                              {ward.sosHistory.slice().reverse().map((history: any, hIdx: number) => (
-                                <div key={hIdx} className="p-4 border rounded-2xl bg-gray-50/50 space-y-3 hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <p className="text-[12px] font-bold text-gray-900">{new Date(history.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
-                                      <p className="text-[10px] text-muted-foreground font-medium mt-1">
-                                        {new Date(history.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                        {" → "}
-                                        {new Date(history.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                      </p>
-                                    </div>
-                                    <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-wider">
-                                      {history.duration}
-                                    </span>
+                      {/* SOS History for Guardian View */}
+                      {ward.sosHistory?.length > 0 && (
+                        <div className="pt-4 border-t border-border/50">
+                          <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+                            <ActivityHistory className="w-3.5 h-3.5" /> {t('recentActivity')}
+                          </p>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {ward.sosHistory.slice(-4).reverse().map((history: any, hIdx: number) => (
+                              <div key={hIdx} className="p-4 border rounded-2xl bg-muted/25 space-y-3 hover:border-primary/20 transition-all hover:bg-white hover:shadow-sm">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <p className="text-[12px] font-bold text-gray-900">{new Date(history.startTime).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                                    <p className="text-[10px] text-muted-foreground font-medium mt-1 font-mono">
+                                      {new Date(history.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                      {" → "}
+                                      {new Date(history.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    </p>
                                   </div>
-                                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                    {history.startLocation && (
-                                      <a
-                                        href={`https://www.google.com/maps?q=${history.startLocation.lat},${history.startLocation.lng}`}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1"
-                                      >
-                                        <MapPin className="w-3 h-3" /> {t('viewStartLocation')}
-                                      </a>
-                                    )}
-                                    {history.audioFile && (
-                                      <button
-                                        onClick={() => {
-                                          const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL}/uploads/audio/${history.audioFile}`);
-                                          audio.play().catch(e => console.error("History audio play failed", e));
-                                        }}
-                                        className="p-1 px-2 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-colors flex items-center gap-1 text-[9px] font-black uppercase italic"
-                                        title="Play Recording"
-                                      >
-                                        <Volume2 className="w-3 h-3" /> {t('audio')}
-                                      </button>
-                                    )}
-                                  </div>
+                                  <span className="px-2 py-0.5 rounded-full bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-wider">
+                                    {history.duration}
+                                  </span>
                                 </div>
-                              ))}
-                            </div>
+                                <div className="flex items-center justify-between pt-2 border-t border-border/40">
+                                  {history.startLocation && (
+                                    <a
+                                      href={`https://www.google.com/maps?q=${history.startLocation.lat},${history.startLocation.lng}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-[10px] text-primary font-bold hover:underline flex items-center gap-1"
+                                    >
+                                      <MapPin className="w-3 h-3" /> {t('viewStartLocation')}
+                                    </a>
+                                  )}
+                                  {history.audioFile && (
+                                    <button
+                                      onClick={() => {
+                                        const audio = new Audio(`${import.meta.env.VITE_API_BASE_URL}/uploads/audio/${history.audioFile}`);
+                                        audio.play().catch(e => console.error("History audio play failed", e));
+                                      }}
+                                      className="p-1 px-2 bg-primary/10 rounded-full text-primary hover:bg-primary/20 transition-colors flex items-center gap-1 text-[9px] font-black uppercase italic"
+                                      title="Play Recording"
+                                    >
+                                      <Volume2 className="w-3.5 h-3.5" /> {t('audio')}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-6 text-muted-foreground">
-                    <p>{t('noUsersLinked')}</p>
-                    <p className="text-sm">{t('enterInviteToStart')}</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+
+                          {/* Link to Full History Page */}
+                          <div className="mt-4 flex justify-end">
+                            <Link 
+                              to={`/history/${ward._id}`} 
+                              className="text-xs text-primary font-black uppercase tracking-wider hover:underline flex items-center gap-1 hover:text-primary-hover transition-colors"
+                            >
+                              <ActivityHistory className="w-3.5 h-3.5 animate-spin-slow" /> View Full History ({ward.sosHistory.length}) →
+                            </Link>
+                          </div>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <Card>
+                <CardContent className="text-center py-12 text-muted-foreground">
+                  <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
+                  <p>{t('noUsersLinked')}</p>
+                  <p className="text-sm">{t('enterInviteToStart')}</p>
+                </CardContent>
+              </Card>
+            )}
         )}
       </div>
     </Layout>

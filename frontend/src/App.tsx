@@ -16,6 +16,7 @@ import SafeZones from "./pages/SafeZones";
 
 import Profile from "./pages/Profile";
 import TrackUser from "./pages/TrackUser";
+import GuardianHistory from "./pages/GuardianHistory";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,7 @@ const App = () => (
                   <Route path="/travel" element={<Travel />} />
                   <Route path="/safe-zones" element={<SafeZones />} />
                   <Route path="/track/:id" element={<TrackUser />} />
+                  <Route path="/history/:id" element={<GuardianHistory />} />
                   <Route path="/profile" element={<Profile />} />
                   <Route path="*" element={<NotFound />} />
                 </Route>
