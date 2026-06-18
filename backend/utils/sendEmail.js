@@ -3,23 +3,19 @@ const nodemailer = require('nodemailer');
 const sendEmail = async ({ to, subject, html }) => {
     try {
         let info;
-        let sentViaApi = false;
+        let sentViaHttp = false;
 
-        // 1. Try Brevo API (HTTP port 443 - Never blocked by Render/Vercel)
-        if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
+        // 1. Try Brevo (Sendinblue) HTTP API (HTTP port 443 - Never blocked by Render/Vercel)
+        if (process.env.BREVO_API_KEY && process.env.SENDER_EMAIL) {
             try {
                 const res = await fetch('https://api.brevo.com/v3/smtp/email', {
                     method: 'POST',
                     headers: {
-                        'accept': 'application/json',
                         'api-key': process.env.BREVO_API_KEY,
-                        'content-type': 'application/json'
+                        'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        sender: {
-                            name: 'NaariSecure',
-                            email: process.env.BREVO_SENDER_EMAIL
-                        },
+                        sender: { name: 'NaariSecure', email: process.env.SENDER_EMAIL },
                         to: [{ email: to }],
                         subject: subject,
                         htmlContent: html
@@ -28,21 +24,52 @@ const sendEmail = async ({ to, subject, html }) => {
 
                 if (res.ok) {
                     const data = await res.json();
-                    console.log(`Email sent successfully via Brevo API: ${data.messageId || JSON.stringify(data)}`);
-                    sentViaApi = true;
+                    console.log(`Email sent successfully via Brevo API: ${data.messageId}`);
+                    sentViaHttp = true;
                     return data;
                 } else {
                     const errorText = await res.text();
-                    console.error(`Brevo API response error: ${res.status} - ${errorText}. Trying next fallback...`);
+                    console.error(`Brevo API response error: ${res.status} - ${errorText}`);
                 }
             } catch (brevoError) {
-                console.error(`Brevo API send failed: ${brevoError.message}. Trying next fallback...`);
+                console.error(`Brevo API send failed: ${brevoError.message}`);
             }
         }
-        
-        // 2. Try Resend API (HTTP port 443 - Never blocked by Render/Vercel)
-        if (!sentViaApi && process.env.RESEND_API_KEY) {
+
+        // 2. Try SendGrid HTTP API (HTTP port 443 - Never blocked by Render/Vercel)
+        if (!sentViaHttp && process.env.SENDGRID_API_KEY && process.env.SENDER_EMAIL) {
             try {
+                const res = await fetch('https://api.sendgrid.com/v3/mail/send', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        personalizations: [{ to: [{ email: to }] }],
+                        from: { email: process.env.SENDER_EMAIL, name: 'NaariSecure' },
+                        subject: subject,
+                        content: [{ type: 'text/html', value: html }]
+                    })
+                });
+
+                if (res.status === 202 || res.ok) {
+                    console.log(`Email sent successfully via SendGrid API`);
+                    sentViaHttp = true;
+                    return true;
+                } else {
+                    const errorText = await res.text();
+                    console.error(`SendGrid API response error: ${res.status} - ${errorText}`);
+                }
+            } catch (sgError) {
+                console.error(`SendGrid API send failed: ${sgError.message}`);
+            }
+        }
+
+        // 3. Try Resend API (HTTP port 443 - Never blocked by Render/Vercel)
+        if (!sentViaHttp && process.env.RESEND_API_KEY) {
+            try {
+                const senderEmail = process.env.SENDER_EMAIL || 'NaariSecure <onboarding@resend.dev>';
                 const res = await fetch('https://api.resend.com/emails', {
                     method: 'POST',
                     headers: {
@@ -50,7 +77,7 @@ const sendEmail = async ({ to, subject, html }) => {
                         'Content-Type': 'application/json'
                     },
                     body: JSON.stringify({
-                        from: 'NaariSecure <onboarding@resend.dev>', // Default sender for Resend free accounts
+                        from: senderEmail,
                         to: to,
                         subject: subject,
                         html: html
@@ -60,21 +87,21 @@ const sendEmail = async ({ to, subject, html }) => {
                 if (res.ok) {
                     const data = await res.json();
                     console.log(`Email sent successfully via Resend API: ${data.id}`);
-                    sentViaApi = true;
+                    sentViaHttp = true;
                     return data;
                 } else {
                     const errorText = await res.text();
-                    console.error(`Resend API response error: ${res.status} - ${errorText}. Falling back to Gmail SMTP...`);
+                    console.error(`Resend API response error: ${res.status} - ${errorText}`);
                 }
             } catch (resendError) {
-                console.error(`Resend API send failed: ${resendError.message}. Falling back to Gmail SMTP...`);
+                console.error(`Resend API send failed: ${resendError.message}`);
             }
         }
 
         let sentViaRealSmtp = false;
 
-        // 3. Try Gmail SMTP (Will work locally but blocked on Render free tier)
-        if (!sentViaApi && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // 4. Try Gmail SMTP (Will work locally but blocked on Render free tier)
+        if (!sentViaHttp && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
                 const transporter = nodemailer.createTransport({
                     service: 'gmail',
@@ -100,8 +127,8 @@ const sendEmail = async ({ to, subject, html }) => {
             }
         }
 
-        // 4. Fallback to Ethereal (Mock test account)
-        if (!sentViaApi && !sentViaRealSmtp) {
+        // 5. Fallback to Ethereal (Mock test account)
+        if (!sentViaHttp && !sentViaRealSmtp) {
             const testAccount = await nodemailer.createTestAccount();
             const transporter = nodemailer.createTransport({
                 host: 'smtp.ethereal.email',
