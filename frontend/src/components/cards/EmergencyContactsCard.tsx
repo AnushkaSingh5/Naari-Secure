@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, Users, CheckCircle, Plus, X, Loader2 } from 'lucide-react';
+import { Phone, Users, CheckCircle, Plus, X, Loader2, Trash2 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useToast } from '@/hooks/use-toast';
@@ -81,6 +81,39 @@ const EmergencyContactsCard = () => {
     }
   };
 
+  const handleRemoveContact = async (contactId: string) => {
+    if (!window.confirm("Are you sure you want to remove this guardian?")) return;
+
+    try {
+      const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/delete-contact/${contactId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        const updatedContacts = await res.json();
+        setContacts(updatedContacts);
+        toast({
+          title: "Contact Removed",
+          description: "Guardian association has been deleted.",
+        });
+      } else {
+        const data = await res.json();
+        toast({
+          title: "Error",
+          description: data.message || "Failed to remove contact",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Connection Error",
+        description: "Could not reach the server.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <div className="elevated-card p-4">
       <div className="flex items-center justify-between mb-4">
@@ -134,7 +167,11 @@ const EmergencyContactsCard = () => {
                 ) : (
                   <div className="text-right">
                     <span className="text-[10px] text-muted-foreground block font-bold uppercase tracking-widest leading-none">Pending</span>
-                    <span className="text-[9px] text-primary block mt-1">Verification sent</span>
+                    {contact.inviteCode && (
+                      <span className="text-[10px] text-primary block mt-1 bg-primary/5 border border-primary/20 px-2 py-0.5 rounded font-mono">
+                        Code: <strong>{contact.inviteCode}</strong>
+                      </span>
+                    )}
                   </div>
                 )}
               </div>
@@ -146,6 +183,12 @@ const EmergencyContactsCard = () => {
                 >
                   <Phone className="w-3 h-3" /> Call
                 </a>
+                <button
+                  onClick={() => handleRemoveContact(contact._id)}
+                  className="p-2 rounded-lg bg-destructive/10 hover:bg-destructive/20 text-destructive transition-colors flex items-center gap-2 text-xs font-medium"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Remove
+                </button>
               </div>
             </div>
           ))

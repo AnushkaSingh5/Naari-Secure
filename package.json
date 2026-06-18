@@ -1,0 +1,10 @@
+{
+  "name": "naari-secure",
+  "version": "1.0.0",
+  "description": "Naari Secure - Women Safety Ecosystem Root Project",
+  "scripts": {
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "dev": "npx concurrently \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\""
+  }
+}

@@ -58,14 +58,29 @@ Naari Secure provides a **dedicated, independent safety ecosystem** where a woma
 
 ##  How to Run the Project
 
-# Clone the repository
+### 1. Clone the repository
+```bash
 git clone https://github.com/<Username>/Naari-Secure.git
-
-# Navigate to project
 cd Naari-Secure
+```
 
-# Install dependencies
+### 2. Install dependencies
+Install dependencies for the root, backend, and frontend:
+```bash
 npm install
+npm install --prefix backend
+npm install --prefix frontend
+```
+
+### 3. Start the project
+You can start the frontend and backend development servers concurrently from the root directory:
+```bash
+npm run dev
+```
+
+Alternatively, you can run them individually:
+- **Backend**: `npm run dev --prefix backend` (Starts on port `5000`)
+- **Frontend**: `npm run dev --prefix frontend` (Starts on port `5173`)
 
 ![image](https://github.com/user-attachments/assets/40ee112d-51a9-4de4-ac17-078b01fde6bb)
 <img width="1893" height="882" alt="image" src="https://github.com/user-attachments/assets/1d54ecfe-02f3-48db-8adb-92d1300a03e0" />
@@ -78,6 +93,3 @@ npm install
 <img width="1892" height="877" alt="image" src="https://github.com/user-attachments/assets/62ab066a-c30a-45d4-a459-e94b41c87ea4" />
 <img width="1898" height="875" alt="image" src="https://github.com/user-attachments/assets/26a2ff29-e8a3-43e6-b968-dfee1cb444a8" />
 <img width="1892" height="733" alt="image" src="https://github.com/user-attachments/assets/8c88b390-950c-48f8-9a4e-b014fee43817" />
-
-# Start backend server
-npm start

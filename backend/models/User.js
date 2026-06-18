@@ -35,7 +35,8 @@ const userSchema = new mongoose.Schema({
         email: { type: String },
         relation: { type: String },
         status: { type: String, enum: ['pending', 'active'], default: 'pending' },
-        guardianId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+        guardianId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        inviteCode: { type: String }
     }],
     wards: [{
         type: mongoose.Schema.Types.ObjectId, ref: 'User'

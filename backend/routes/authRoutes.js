@@ -17,10 +17,10 @@ const generateToken = (id, role) => {
 // @access  Public
 router.post('/signup', async (req, res) => {
     const { name, email, password, emergencyContacts, frequentPlaces } = req.body;
-    const role = 'girl'; // Enforce role
+    const role = req.body.role || 'girl';
 
     try {
-        if (!emergencyContacts || emergencyContacts.length === 0) {
+        if (role === 'girl' && (!emergencyContacts || emergencyContacts.length === 0)) {
             return res.status(400).json({ message: 'At least one emergency contact is required.' });
         }
 
@@ -29,86 +29,114 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
+        // Process emergency contacts to generate unique invite code for each contact
+        const processedContacts = [];
+        if (emergencyContacts && emergencyContacts.length > 0) {
+            for (const contact of emergencyContacts) {
+                let inviteCode;
+                let isUnique = false;
+                while (!isUnique) {
+                    inviteCode = Math.floor(100000 + Math.random() * 900000).toString();
+                    const existing = await User.findOne({ accessCode: inviteCode });
+                    const existingContact = await User.findOne({ 'emergencyContacts.inviteCode': inviteCode });
+                    if (!existing && !existingContact) isUnique = true;
+                }
+                processedContacts.push({
+                    name: contact.name,
+                    phone: contact.phone,
+                    email: contact.email,
+                    relation: contact.relation,
+                    inviteCode: inviteCode,
+                    status: 'pending'
+                });
+            }
+        }
+
         const user = await User.create({
             name,
             email,
             password,
             role,
-            emergencyContacts,
+            emergencyContacts: processedContacts,
             frequentPlaces
         });
 
         if (user) {
-            // Process Guardians
-            for (const contact of emergencyContacts) {
-                if (contact.email) {
-                    // Check if guardian account exists
-                    let guardian = await User.findOne({ email: contact.email });
+            if (role === 'girl') {
+                // Process Guardians
+                for (const contact of user.emergencyContacts) {
+                    if (contact.email) {
+                        // Check if guardian account exists
+                        let guardian = await User.findOne({ email: contact.email });
 
-                    let accessCode;
-                    if (!guardian) {
-                        // Generate Access Code
-                        let isUnique = false;
-                        while (!isUnique) {
-                            accessCode = Math.floor(100000 + Math.random() * 900000).toString();
-                            const existing = await User.findOne({ accessCode });
-                            if (!existing) isUnique = true;
+                        const accessCode = contact.inviteCode;
+                        if (!guardian) {
+                            // Create Pre-Verified Guardian Account
+                            guardian = await User.create({
+                                name: contact.name,
+                                email: contact.email,
+                                role: 'guardian',
+                                accessCode,
+                                password: 'guardian123', // Default
+                                isVerified: false, // Needs activation
+                                wards: [user._id]
+                            });
+                        } else {
+                            if (guardian.accessCode) {
+                                contact.inviteCode = guardian.accessCode;
+                            } else {
+                                guardian.accessCode = accessCode;
+                                await guardian.save();
+                            }
+                            if (!guardian.wards.includes(user._id)) {
+                                guardian.wards.push(user._id);
+                                await guardian.save();
+                            }
                         }
 
-                        // Create Pre-Verified Guardian Account
-                        guardian = await User.create({
-                            name: contact.name,
-                            email: contact.email,
-                            role: 'guardian',
-                            accessCode,
-                            password: 'guardian123', // Default
-                            isVerified: false, // Needs activation
-                            wards: [user._id]
+                        // Update Girl's contact with Guardian ID 
+                        contact.guardianId = guardian._id;
+                        await user.save();
+
+                        // Invite Link (Token contains Guardian ID)
+                        const inviteToken = Buffer.from(JSON.stringify({
+                            guardianId: guardian._id,
+                            girlId: user._id
+                        })).toString('base64');
+
+                        const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
+
+                        console.log('\n==================================================');
+                        console.log('       DEVELOPMENT: GUARDIAN INVITATION CREATED    ');
+                        console.log('==================================================');
+                        console.log(`Guardian: ${contact.name}`);
+                        console.log(`Email:    ${contact.email}`);
+                        console.log(`Code:     ${contact.inviteCode}`);
+                        console.log(`Link:     ${inviteLink}`);
+                        console.log('==================================================\n');
+
+                        const emailContent = `
+                            <h1>Action Required: Activate Your Guardian Account</h1>
+                            <p>Hello ${contact.name},</p>
+                            <p>${user.name} has chosen you as their Guardian on <strong>NaariSecure</strong>.</p>
+                            
+                            <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                                <h2 style="margin: 0; color: #333;">Your Access Code: <span style="color: #4CAF50;">${contact.inviteCode}</span></h2>
+                            </div>
+
+                            <p><strong>Step 1:</strong> Click the link below to ACTIVATE your code.</p>
+                            <p><strong>Step 2:</strong> Use the code to login.</p>
+                            
+                            <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">ACTIVATE CODE</a>
+                            <p style="font-size: 12px; color: #666;">Or copy link: ${inviteLink}</p>
+                        `;
+
+                        await sendEmail({
+                            to: contact.email,
+                            subject: 'Your Guardian Code & Activation - NaariSecure',
+                            html: emailContent
                         });
-                    } else {
-                        accessCode = guardian.accessCode;
-                        if (!guardian.wards.includes(user._id)) {
-                            guardian.wards.push(user._id);
-                            await guardian.save();
-                        }
                     }
-
-                    // Update Girl's contact with Guardian ID 
-                    const contactIndex = user.emergencyContacts.findIndex(c => c.email === contact.email);
-                    if (contactIndex !== -1) {
-                        user.emergencyContacts[contactIndex].guardianId = guardian._id;
-                    }
-                    await user.save();
-
-                    // Invite Link (Token contains Guardian ID)
-                    const inviteToken = Buffer.from(JSON.stringify({
-                        guardianId: guardian._id,
-                        girlId: user._id
-                    })).toString('base64');
-
-                    const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
-
-                    const emailContent = `
-                        <h1>Action Required: Activate Your Guardian Account</h1>
-                        <p>Hello ${contact.name},</p>
-                        <p>${user.name} has chosen you as their Guardian on <strong>NaariSecure</strong>.</p>
-                        
-                        <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
-                            <h2 style="margin: 0; color: #333;">Your Access Code: <span style="color: #4CAF50;">${accessCode}</span></h2>
-                        </div>
-
-                        <p><strong>Step 1:</strong> Click the link below to ACTIVATE your code.</p>
-                        <p><strong>Step 2:</strong> Use the code to login.</p>
-                        
-                        <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">ACTIVATE CODE</a>
-                        <p style="font-size: 12px; color: #666;">Or copy link: ${inviteLink}</p>
-                    `;
-
-                    await sendEmail({
-                        to: contact.email,
-                        subject: 'Your Guardian Code & Activation - NaariSecure',
-                        html: emailContent
-                    });
                 }
             }
 
@@ -257,35 +285,47 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
             return res.status(400).json({ message: 'Maximum 5 emergency contacts allowed' });
         }
 
-        // Process Guardian logic (extracted from signup)
-        let guardian = await User.findOne({ email });
-        let accessCode;
+        let guardianId = undefined;
+        let inviteCode;
+        let isUnique = false;
+        while (!isUnique) {
+            inviteCode = Math.floor(100000 + Math.random() * 900000).toString();
+            const existing = await User.findOne({ accessCode: inviteCode });
+            const existingContact = await User.findOne({ 'emergencyContacts.inviteCode': inviteCode });
+            if (!existing && !existingContact) isUnique = true;
+        }
 
-        if (!guardian) {
-            // Generate Access Code
-            let isUnique = false;
-            while (!isUnique) {
-                accessCode = Math.floor(100000 + Math.random() * 900000).toString();
-                const existing = await User.findOne({ accessCode });
-                if (!existing) isUnique = true;
-            }
+        let accessCode = inviteCode;
 
-            // Create Pre-Verified Guardian Account
-            guardian = await User.create({
-                name,
-                email,
-                role: 'guardian',
-                accessCode,
-                password: 'guardian123', // Default
-                isVerified: false,
-                wards: [user._id]
-            });
-        } else {
-            accessCode = guardian.accessCode;
-            if (!guardian.wards.includes(user._id)) {
-                guardian.wards.push(user._id);
-                await guardian.save();
+        if (email) {
+            // Process Guardian logic (extracted from signup)
+            let guardian = await User.findOne({ email });
+
+            if (!guardian) {
+                // Create Pre-Verified Guardian Account
+                guardian = await User.create({
+                    name,
+                    email,
+                    role: 'guardian',
+                    accessCode,
+                    password: 'guardian123', // Default
+                    isVerified: false,
+                    wards: [user._id]
+                });
+            } else {
+                if (guardian.accessCode) {
+                    inviteCode = guardian.accessCode;
+                    accessCode = guardian.accessCode;
+                } else {
+                    guardian.accessCode = accessCode;
+                    await guardian.save();
+                }
+                if (!guardian.wards.includes(user._id)) {
+                    guardian.wards.push(user._id);
+                    await guardian.save();
+                }
             }
+            guardianId = guardian._id;
         }
 
         // Add contact to girl's list
@@ -294,40 +334,52 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
             email,
             phone,
             relation,
-            guardianId: guardian._id,
-            status: guardian.isVerified ? 'active' : 'pending'
+            guardianId,
+            inviteCode,
+            status: (email && guardianId && (await User.findById(guardianId))?.isVerified) ? 'active' : 'pending'
         });
 
         await user.save();
 
-        // Send Email Invite
-        const inviteToken = Buffer.from(JSON.stringify({
-            guardianId: guardian._id,
-            girlId: user._id
-        })).toString('base64');
+        if (email && guardianId) {
+            // Send Email Invite
+            const inviteToken = Buffer.from(JSON.stringify({
+                guardianId,
+                girlId: user._id
+            })).toString('base64');
 
-        const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
+            const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
 
-        const emailContent = `
-            <h1>Action Required: Activate Your Guardian Account</h1>
-            <p>Hello ${name},</p>
-            <p>${user.name} has chosen you as their Guardian on <strong>NaariSecure</strong>.</p>
-            
-            <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
-                <h2 style="margin: 0; color: #333;">Your Access Code: <span style="color: #4CAF50;">${accessCode}</span></h2>
-            </div>
+            console.log('\n==================================================');
+            console.log('       DEVELOPMENT: GUARDIAN INVITATION CREATED    ');
+            console.log('==================================================');
+            console.log(`Guardian: ${name}`);
+            console.log(`Email:    ${email}`);
+            console.log(`Code:     ${accessCode}`);
+            console.log(`Link:     ${inviteLink}`);
+            console.log('==================================================\n');
 
-            <p><strong>Step 1:</strong> Click the link below to ACTIVATE your code.</p>
-            <p><strong>Step 2:</strong> Use the code to login.</p>
-            
-            <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">ACTIVATE CODE</a>
-        `;
+            const emailContent = `
+                <h1>Action Required: Activate Your Guardian Account</h1>
+                <p>Hello ${name},</p>
+                <p>${user.name} has chosen you as their Guardian on <strong>NaariSecure</strong>.</p>
+                
+                <div style="background-color: #f5f5f5; padding: 15px; margin: 15px 0; border-radius: 5px;">
+                    <h2 style="margin: 0; color: #333;">Your Access Code: <span style="color: #4CAF50;">${accessCode}</span></h2>
+                </div>
 
-        await sendEmail({
-            to: email,
-            subject: 'New Guardian Request - NaariSecure',
-            html: emailContent
-        });
+                <p><strong>Step 1:</strong> Click the link below to ACTIVATE your code.</p>
+                <p><strong>Step 2:</strong> Use the code to login.</p>
+                
+                <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">ACTIVATE CODE</a>
+            `;
+
+            await sendEmail({
+                to: email,
+                subject: 'New Guardian Request - NaariSecure',
+                html: emailContent
+            });
+        }
 
         res.json(user.emergencyContacts);
     } catch (error) {
@@ -376,6 +428,45 @@ router.post('/update-status', authMiddleware, async (req, res) => {
     } catch (error) {
         console.error('Update Status Error:', error);
         res.status(500).json({ message: 'Server error updating status' });
+    }
+});
+
+// @route   DELETE /api/auth/delete-contact/:contactId
+// @desc    Delete an emergency contact and remove association
+// @access  Private
+router.delete('/delete-contact/:contactId', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id);
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const contact = user.emergencyContacts.find(c => c._id && c._id.toString() === req.params.contactId);
+        if (!contact) return res.status(404).json({ message: 'Contact not found' });
+
+        const guardianId = contact.guardianId;
+
+        // Remove from girl's emergencyContacts
+        user.emergencyContacts = user.emergencyContacts.filter(c => c._id && c._id.toString() !== req.params.contactId);
+        await user.save();
+
+        if (guardianId) {
+            const guardian = await User.findById(guardianId);
+            if (guardian && guardian.wards) {
+                // Remove girl from guardian's wards
+                guardian.wards = guardian.wards.filter(wId => wId && wId.toString() !== user._id.toString());
+                
+                // If the guardian has no wards left, invalidate/revoke their credentials
+                if (guardian.wards.length === 0) {
+                    guardian.isVerified = false;
+                    guardian.accessCode = undefined;
+                }
+                await guardian.save();
+            }
+        }
+
+        res.json(user.emergencyContacts);
+    } catch (error) {
+        console.error("Delete Contact Error:", error);
+        res.status(500).json({ message: error.message || 'Server error deleting contact' });
     }
 });
 

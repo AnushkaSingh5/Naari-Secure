@@ -11,7 +11,13 @@ async function verify() {
         name: 'Test User',
         email: `test${Date.now()}@example.com`,
         password: 'password123',
-        role: 'girl'
+        role: 'girl',
+        emergencyContacts: [{
+            name: 'Test Contact',
+            phone: '1234567890',
+            email: `guardian${Date.now()}@example.com`,
+            relation: 'Friend'
+        }]
     };
 
     console.log('1. Testing Signup...');
