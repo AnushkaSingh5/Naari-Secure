@@ -1,6 +1,7 @@
 
 async function verifyInviteFlow() {
-    const baseUrl = 'http://localhost:5000/api';
+    const port = process.env.PORT || 5001;
+    const baseUrl = `http://localhost:${port}/api`;
     const timestamp = Date.now();
 
     console.log('--- Testing Guardian Invite Flow ---');

@@ -1,4 +1,5 @@
-const baseUrl = 'http://localhost:5000/api/auth';
+const port = process.env.PORT || 5001;
+const baseUrl = `http://localhost:${port}/api/auth`;
 const timestamp = Date.now();
 
 async function testDeleteFlow() {

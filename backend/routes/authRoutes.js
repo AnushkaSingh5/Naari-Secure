@@ -79,7 +79,7 @@ router.post('/signup', async (req, res) => {
                                 accessCode,
                                 password: 'guardian123', // Default
                                 isVerified: false, // Needs activation
-                                wards: [user._id]
+                                wards: [] // Only link after acceptance
                             });
                         } else {
                             if (guardian.accessCode) {
@@ -88,10 +88,7 @@ router.post('/signup', async (req, res) => {
                                 guardian.accessCode = accessCode;
                                 await guardian.save();
                             }
-                            if (!guardian.wards.includes(user._id)) {
-                                guardian.wards.push(user._id);
-                                await guardian.save();
-                            }
+                            // Do not link ward to guardian's list until accepted
                         }
 
                         // Update Girl's contact with Guardian ID 
@@ -172,8 +169,12 @@ router.post('/accept-invite', async (req, res) => {
         const guardian = await User.findById(guardianId);
         if (!guardian) return res.status(404).json({ message: 'Guardian account not found' });
 
-        // Activate
+        // Activate & Link Ward
         guardian.isVerified = true;
+        guardian.wards = guardian.wards || [];
+        if (!guardian.wards.includes(girlId)) {
+            guardian.wards.push(girlId);
+        }
         await guardian.save();
 
         // Update Girl's Link Status
@@ -310,7 +311,7 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
                     accessCode,
                     password: 'guardian123', // Default
                     isVerified: false,
-                    wards: [user._id]
+                    wards: [] // Only link after acceptance
                 });
             } else {
                 if (guardian.accessCode) {
@@ -320,10 +321,7 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
                     guardian.accessCode = accessCode;
                     await guardian.save();
                 }
-                if (!guardian.wards.includes(user._id)) {
-                    guardian.wards.push(user._id);
-                    await guardian.save();
-                }
+                // Do not link ward to guardian's list until accepted
             }
             guardianId = guardian._id;
         }
@@ -336,7 +334,7 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
             relation,
             guardianId,
             inviteCode,
-            status: (email && guardianId && (await User.findById(guardianId))?.isVerified) ? 'active' : 'pending'
+            status: 'pending' // Enforce pending status initially
         });
 
         await user.save();
