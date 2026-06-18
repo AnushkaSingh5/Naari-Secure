@@ -3,10 +3,45 @@ const nodemailer = require('nodemailer');
 const sendEmail = async ({ to, subject, html }) => {
     try {
         let info;
-        let sentViaResend = false;
+        let sentViaApi = false;
+
+        // 1. Try Brevo API (HTTP port 443 - Never blocked by Render/Vercel)
+        if (process.env.BREVO_API_KEY && process.env.BREVO_SENDER_EMAIL) {
+            try {
+                const res = await fetch('https://api.brevo.com/v3/smtp/email', {
+                    method: 'POST',
+                    headers: {
+                        'accept': 'application/json',
+                        'api-key': process.env.BREVO_API_KEY,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        sender: {
+                            name: 'NaariSecure',
+                            email: process.env.BREVO_SENDER_EMAIL
+                        },
+                        to: [{ email: to }],
+                        subject: subject,
+                        htmlContent: html
+                    })
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    console.log(`Email sent successfully via Brevo API: ${data.messageId || JSON.stringify(data)}`);
+                    sentViaApi = true;
+                    return data;
+                } else {
+                    const errorText = await res.text();
+                    console.error(`Brevo API response error: ${res.status} - ${errorText}. Trying next fallback...`);
+                }
+            } catch (brevoError) {
+                console.error(`Brevo API send failed: ${brevoError.message}. Trying next fallback...`);
+            }
+        }
         
-        // 1. Try Resend API (HTTP port 443 - Never blocked by Render/Vercel)
-        if (process.env.RESEND_API_KEY) {
+        // 2. Try Resend API (HTTP port 443 - Never blocked by Render/Vercel)
+        if (!sentViaApi && process.env.RESEND_API_KEY) {
             try {
                 const res = await fetch('https://api.resend.com/emails', {
                     method: 'POST',
@@ -25,7 +60,7 @@ const sendEmail = async ({ to, subject, html }) => {
                 if (res.ok) {
                     const data = await res.json();
                     console.log(`Email sent successfully via Resend API: ${data.id}`);
-                    sentViaResend = true;
+                    sentViaApi = true;
                     return data;
                 } else {
                     const errorText = await res.text();
@@ -38,8 +73,8 @@ const sendEmail = async ({ to, subject, html }) => {
 
         let sentViaRealSmtp = false;
 
-        // 2. Try Gmail SMTP (Will work locally but blocked on Render free tier)
-        if (!sentViaResend && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        // 3. Try Gmail SMTP (Will work locally but blocked on Render free tier)
+        if (!sentViaApi && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
                 const transporter = nodemailer.createTransport({
                     service: 'gmail',
@@ -65,8 +100,8 @@ const sendEmail = async ({ to, subject, html }) => {
             }
         }
 
-        // 3. Fallback to Ethereal (Mock test account)
-        if (!sentViaResend && !sentViaRealSmtp) {
+        // 4. Fallback to Ethereal (Mock test account)
+        if (!sentViaApi && !sentViaRealSmtp) {
             const testAccount = await nodemailer.createTestAccount();
             const transporter = nodemailer.createTransport({
                 host: 'smtp.ethereal.email',
