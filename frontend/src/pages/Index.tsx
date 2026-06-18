@@ -566,6 +566,7 @@ const Index = () => {
                 </CardContent>
               </Card>
             )}
+          </div>
         )}
       </div>
     </Layout>
