@@ -3,6 +3,7 @@ const nodemailer = require('nodemailer');
 const sendEmail = async ({ to, subject, html }) => {
     try {
         let info;
+        let sentViaResend = false;
         
         // 1. Try Resend API (HTTP port 443 - Never blocked by Render/Vercel)
         if (process.env.RESEND_API_KEY) {
@@ -24,20 +25,21 @@ const sendEmail = async ({ to, subject, html }) => {
                 if (res.ok) {
                     const data = await res.json();
                     console.log(`Email sent successfully via Resend API: ${data.id}`);
+                    sentViaResend = true;
                     return data;
                 } else {
                     const errorText = await res.text();
-                    console.error(`Resend API response error: ${res.status} - ${errorText}`);
+                    console.error(`Resend API response error: ${res.status} - ${errorText}. Falling back to Gmail SMTP...`);
                 }
             } catch (resendError) {
-                console.error(`Resend API send failed: ${resendError.message}. Trying Gmail SMTP...`);
+                console.error(`Resend API send failed: ${resendError.message}. Falling back to Gmail SMTP...`);
             }
         }
 
         let sentViaRealSmtp = false;
 
         // 2. Try Gmail SMTP (Will work locally but blocked on Render free tier)
-        if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+        if (!sentViaResend && process.env.EMAIL_USER && process.env.EMAIL_PASS) {
             try {
                 const transporter = nodemailer.createTransport({
                     service: 'gmail',
@@ -61,7 +63,7 @@ const sendEmail = async ({ to, subject, html }) => {
         }
 
         // 3. Fallback to Ethereal (Mock test account)
-        if (!sentViaRealSmtp) {
+        if (!sentViaResend && !sentViaRealSmtp) {
             const testAccount = await nodemailer.createTestAccount();
             const transporter = nodemailer.createTransport({
                 host: 'smtp.ethereal.email',
