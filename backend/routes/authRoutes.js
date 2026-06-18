@@ -29,6 +29,21 @@ router.post('/signup', async (req, res) => {
             return res.status(400).json({ message: 'User already exists' });
         }
 
+        // Validate emergency contact emails
+        if (role === 'girl' && emergencyContacts && emergencyContacts.length > 0) {
+            for (const contact of emergencyContacts) {
+                if (contact.email) {
+                    if (contact.email.toLowerCase() === email.toLowerCase()) {
+                        return res.status(400).json({ message: 'You cannot add your own email as an emergency contact.' });
+                    }
+                    const contactIsGirl = await User.findOne({ email: contact.email, role: 'girl' });
+                    if (contactIsGirl) {
+                        return res.status(400).json({ message: `The email ${contact.email} is already registered as a User (Girl) account. Guardians must use a different email.` });
+                    }
+                }
+            }
+        }
+
         // Process emergency contacts to generate unique invite code for each contact
         const processedContacts = [];
         if (emergencyContacts && emergencyContacts.length > 0) {
@@ -284,6 +299,16 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
 
         if (user.emergencyContacts.length >= 5) {
             return res.status(400).json({ message: 'Maximum 5 emergency contacts allowed' });
+        }
+
+        if (email) {
+            if (email.toLowerCase() === user.email.toLowerCase()) {
+                return res.status(400).json({ message: 'You cannot add your own email as an emergency contact.' });
+            }
+            const existingGirl = await User.findOne({ email, role: 'girl' });
+            if (existingGirl) {
+                return res.status(400).json({ message: 'This email is already registered as a User (Girl) account. Guardians must use a different email.' });
+            }
         }
 
         let guardianId = undefined;
