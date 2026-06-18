@@ -128,7 +128,7 @@ router.post('/signup', async (req, res) => {
                             <p style="font-size: 12px; color: #666;">Or copy link: ${inviteLink}</p>
                         `;
 
-                        await sendEmail({
+                        sendEmail({
                             to: contact.email,
                             subject: 'Your Guardian Code & Activation - NaariSecure',
                             html: emailContent
@@ -372,7 +372,7 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
                 <a href="${inviteLink}" style="display: inline-block; padding: 12px 24px; background-color: #000; color: #fff; text-decoration: none; border-radius: 5px; font-weight: bold;">ACTIVATE CODE</a>
             `;
 
-            await sendEmail({
+            sendEmail({
                 to: email,
                 subject: 'New Guardian Request - NaariSecure',
                 html: emailContent

@@ -43,6 +43,9 @@ const sendEmail = async ({ to, subject, html }) => {
             try {
                 const transporter = nodemailer.createTransport({
                     service: 'gmail',
+                    connectionTimeout: 5000, // 5 seconds
+                    greetingTimeout: 5000,
+                    socketTimeout: 5000,
                     auth: {
                         user: process.env.EMAIL_USER,
                         pass: process.env.EMAIL_PASS
@@ -69,6 +72,9 @@ const sendEmail = async ({ to, subject, html }) => {
                 host: 'smtp.ethereal.email',
                 port: 587,
                 secure: false,
+                connectionTimeout: 5000, // 5 seconds
+                greetingTimeout: 5000,
+                socketTimeout: 5000,
                 auth: {
                     user: testAccount.user,
                     pass: testAccount.pass
