@@ -144,7 +144,6 @@ const Travel = () => {
     if (now > expectedArrivalTime!) {
       await acknowledgeDelay();
       await extendTravelTime(5); // Add 5 mins of buffer as requested
-      setLatePromptShown(false); // Reset so it can trigger again after the 5 min buffer passes
     }
     setShowSafetyCheck(false);
   };
@@ -164,6 +163,10 @@ const Travel = () => {
         setIsMidJourneyCheck(false);
         setShowSafetyCheck(true);
         setLatePromptShown(true); // Flag that we've shown the prompt for this delay period
+      }
+
+      if (now <= expectedArrivalTime && latePromptShown) {
+        setLatePromptShown(false);
       }
 
       if (isNightMode && !midJourneyChecked && !showSafetyCheck && !isSosActive && travelSessions.length > 0) {

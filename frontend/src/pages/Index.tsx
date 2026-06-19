@@ -16,14 +16,13 @@ import { useApp } from '@/contexts/AppContext';
 const Index = () => {
   const { t } = useLanguage();
   const { user, token } = useAuth();
-  const { triggerFakeCall } = useApp();
+  const { triggerFakeCall, activateSOS, isSosActive, isTravelModeOn, currentDestination, stopTravelMode } = useApp();
   const { toast } = useToast();
   const [userData, setUserData] = useState<any>(null);
   const [inviteCode, setInviteCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [wards, setWards] = useState<any[]>([]);
   const [voiceEnabled, setVoiceEnabled] = useState(false);
-  const { activateSOS, isSosActive } = useApp();
 
   // Voice SOS Hook for Dashboard
   useVoiceSOS(voiceEnabled, () => {
@@ -221,6 +220,42 @@ const Index = () => {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        )}
+
+        {/* Active Travel Mode Banner */}
+        {user?.role === 'girl' && isTravelModeOn && (
+          <div className="mb-6 bg-indigo-950 text-indigo-100 p-6 rounded-3xl border border-indigo-800 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-indigo-900/50 rounded-2xl">
+                <Navigation className="w-6 h-6 text-yellow-300 animate-bounce" style={{ animationDuration: '3s' }} />
+              </div>
+              <div>
+                <h3 className="text-white font-bold text-lg">Active Travel Session</h3>
+                <p className="text-indigo-200 text-sm">
+                  Travelling to <span className="font-semibold text-yellow-300">{currentDestination}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3 w-full sm:w-auto">
+              <Link to="/travel" className="flex-1 sm:flex-none">
+                <Button variant="outline" className="w-full bg-indigo-900/30 hover:bg-indigo-900/60 text-white border-indigo-700">
+                  View Map
+                </Button>
+              </Link>
+              <Button
+                onClick={() => {
+                  stopTravelMode(true);
+                  toast({
+                    title: "Travel Mode Stopped",
+                    description: "You have marked yourself as safely arrived."
+                  });
+                }}
+                className="flex-1 sm:flex-none bg-emerald-600 hover:bg-emerald-700 text-white border-none shadow-md shadow-emerald-900/30"
+              >
+                I Arrived Safely
+              </Button>
+            </div>
           </div>
         )}
 
