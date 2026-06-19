@@ -334,7 +334,7 @@ const Index = () => {
                 {userData?.sosHistory?.length > 0 ? (
                   <div className="space-y-4">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {userData.sosHistory.slice(-4).reverse().map((item: any, i: number) => (
+                      {userData.sosHistory.slice(-6).reverse().map((item: any, i: number) => (
                         <div key={i} className="p-4 border rounded-2xl bg-gray-50/50 space-y-3 hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
                           <div className="flex justify-between items-start">
                             <div>
