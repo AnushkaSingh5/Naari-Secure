@@ -9,34 +9,46 @@ import { History as ActivityHistory, MapPin, Volume2, ArrowLeft, Clock, Calendar
 
 const GuardianHistory = () => {
   const { id } = useParams();
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const { t } = useLanguage();
   const [ward, setWard] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'sos' | 'travel'>('sos');
 
   useEffect(() => {
-    const fetchWardData = async () => {
+    const fetchHistoryData = async () => {
       try {
-        const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/guardian/sos-status`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          const foundWard = data.find((w: any) => w._id === id);
-          setWard(foundWard);
+        if (user?.role === 'girl') {
+          // Fetch current user's (girl's) own history
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/auth/me`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            setWard(data);
+          }
+        } else {
+          // Guardian: Fetch ward's history
+          const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/guardian/sos-status`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const foundWard = data.find((w: any) => w._id === id);
+            setWard(foundWard);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch ward history", error);
+        console.error("Failed to fetch history data", error);
       } finally {
         setLoading(false);
       }
     };
 
-    if (token && id) {
-      fetchWardData();
+    if (token && id && user) {
+      fetchHistoryData();
     }
-  }, [token, id]);
+  }, [token, id, user]);
 
   if (loading) {
     return (
@@ -54,8 +66,8 @@ const GuardianHistory = () => {
       <Layout>
         <div className="container px-4 py-24 text-center max-w-md mx-auto">
           <ShieldAlert className="w-16 h-16 text-destructive mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-foreground mb-2">Ward Not Found</h2>
-          <p className="text-muted-foreground mb-6">We couldn't retrieve the history for this safety contact. It may have been unlinked.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">History Not Found</h2>
+          <p className="text-muted-foreground mb-6">We couldn't retrieve the history logs for this account.</p>
           <Link to="/">
             <Button className="w-full flex items-center justify-center gap-2">
               <ArrowLeft className="w-4 h-4" /> Back to Dashboard
@@ -88,7 +100,7 @@ const GuardianHistory = () => {
           </div>
           <div className="flex items-center gap-2">
             <span className="text-[10px] font-black uppercase tracking-widest bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full border border-emerald-200">
-              Verified Contact
+              {user?.role === 'girl' ? 'My Safety Log' : 'Verified Contact'}
             </span>
           </div>
         </div>
@@ -126,7 +138,7 @@ const GuardianHistory = () => {
                 Complete SOS History
               </CardTitle>
               <CardDescription>
-                Full list of all emergency warnings triggered by {ward.name}.
+                Full list of all emergency warnings triggered by {user?.role === 'girl' ? 'you' : ward.name}.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -185,7 +197,7 @@ const GuardianHistory = () => {
                 <div className="text-center py-16 text-muted-foreground bg-gray-50/30 rounded-2xl border border-dashed">
                   <Clock className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p className="text-lg font-medium">No SOS Incidents</p>
-                  <p className="text-sm opacity-70">{ward.name} has not triggered any emergency warnings.</p>
+                  <p className="text-sm opacity-70">{user?.role === 'girl' ? 'You have' : `${ward.name} has`} not triggered any emergency warnings.</p>
                 </div>
               )}
             </CardContent>
@@ -198,7 +210,7 @@ const GuardianHistory = () => {
                 Complete Travel History
               </CardTitle>
               <CardDescription>
-                Full list of all travel mode journeys completed by {ward.name}.
+                Full list of all travel mode journeys completed by {user?.role === 'girl' ? 'you' : ward.name}.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -256,7 +268,7 @@ const GuardianHistory = () => {
                 <div className="text-center py-16 text-muted-foreground bg-gray-50/30 rounded-2xl border border-dashed">
                   <Navigation className="w-12 h-12 mx-auto mb-3 opacity-20" />
                   <p className="text-lg font-medium">No Travel History</p>
-                  <p className="text-sm opacity-70">{ward.name} has not recorded any travel routes yet.</p>
+                  <p className="text-sm opacity-70">{user?.role === 'girl' ? 'You have' : `${ward.name} has`} not recorded any travel routes yet.</p>
                 </div>
               )}
             </CardContent>

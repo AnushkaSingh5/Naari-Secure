@@ -332,37 +332,46 @@ const Index = () => {
               </CardHeader>
               <CardContent>
                 {userData?.sosHistory?.length > 0 ? (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {userData.sosHistory.slice().reverse().map((item: any, i: number) => (
-                      <div key={i} className="p-4 border rounded-2xl bg-gray-50/50 space-y-3 hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
-                        <div className="flex justify-between items-start">
-                          <div>
-                            <p className="text-sm font-bold text-gray-900">{new Date(item.startTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                            <p className="text-xs text-muted-foreground font-medium mt-1">
-                              {new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                              {" → "}
-                              {new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                            </p>
+                  <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {userData.sosHistory.slice(-4).reverse().map((item: any, i: number) => (
+                        <div key={i} className="p-4 border rounded-2xl bg-gray-50/50 space-y-3 hover:border-primary/30 transition-all hover:bg-white hover:shadow-md">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <p className="text-sm font-bold text-gray-900">{new Date(item.startTime).toLocaleDateString(undefined, { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                              <p className="text-xs text-muted-foreground font-medium mt-1">
+                                {new Date(item.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                {" → "}
+                                {new Date(item.endTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                              </p>
+                            </div>
+                            <span className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider">
+                              {item.duration === 'UNKNOWN' ? t('unknown') : item.duration}
+                            </span>
                           </div>
-                          <span className="px-3 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-black uppercase tracking-wider">
-                            {item.duration === 'UNKNOWN' ? t('unknown') : item.duration}
-                          </span>
+                          <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                            {item.startLocation && (
+                              <a
+                                href={`https://www.google.com/maps?q=${item.startLocation.lat},${item.startLocation.lng}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs text-primary font-bold hover:underline flex items-center gap-1.5"
+                              >
+                                <MapPin className="w-4 h-4" /> {t('viewStartLocation')}
+                              </a>
+                            )}
+                            <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recorded</div>
+                          </div>
                         </div>
-                        <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                          {item.startLocation && (
-                            <a
-                              href={`https://www.google.com/maps?q=${item.startLocation.lat},${item.startLocation.lng}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-xs text-primary font-bold hover:underline flex items-center gap-1.5"
-                            >
-                              <MapPin className="w-4 h-4" /> {t('viewStartLocation')}
-                            </a>
-                          )}
-                          <div className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Recorded</div>
-                        </div>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
+                    <div className="flex justify-end pt-2">
+                      <Link to={`/history/${user?._id}`}>
+                        <Button variant="outline" className="flex items-center gap-2">
+                          <ActivityHistory className="w-4 h-4" /> View Full History ({userData.sosHistory.length}) →
+                        </Button>
+                      </Link>
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground bg-gray-50/50 rounded-2xl border border-dashed">
