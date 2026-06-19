@@ -2,13 +2,18 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 const authMiddleware = require('../middleware/authMiddleware');
 const { triggerSOS, cancelSOS, updateLocation, uploadAudio, notifyHighRisk } = require('../controllers/sosController');
 
 // Multer Storage Config
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/audio');
+        const dir = 'uploads/audio';
+        if (!fs.existsSync(dir)) {
+            fs.mkdirSync(dir, { recursive: true });
+        }
+        cb(null, dir);
     },
     filename: (req, file, cb) => {
         const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);

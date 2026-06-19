@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 const path = require('path');
+const fs = require('fs');
 
 dotenv.config();
 
@@ -13,10 +14,16 @@ if (!process.env.USER_DB_URI) {
 
 const app = express();
 
+// Ensure uploads/audio directory exists on startup
+const uploadDir = path.join(__dirname, 'uploads/audio');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
+
 // Middleware
 app.use(express.json());
 app.use(cors());
-app.use('/uploads/audio', express.static(path.join(__dirname, 'uploads/audio')));
+app.use('/uploads/audio', express.static(uploadDir));
 
 // Database Connection (User Auth)
 mongoose.connect(process.env.USER_DB_URI)
