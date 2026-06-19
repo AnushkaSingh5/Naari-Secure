@@ -12,6 +12,28 @@ const generateToken = (id, role) => {
     });
 };
 
+// Helper to dynamically determine frontend base URL
+const getFrontendUrl = (req) => {
+    if (process.env.FRONTEND_URL) {
+        return process.env.FRONTEND_URL;
+    }
+    const referer = req.headers.referer; // e.g. "https://anushkasingh5.github.io/Naari-Secure/travel" or "http://localhost:8080/"
+    if (referer) {
+        try {
+            const parsed = new URL(referer);
+            const pathSegments = parsed.pathname.split('/').filter(Boolean);
+            // If it's GitHub Pages, keep the repository name subpath if it exists
+            if (parsed.hostname.endsWith('github.io') && pathSegments.length > 0) {
+                return `${parsed.origin}/${pathSegments[0]}`;
+            }
+            return parsed.origin;
+        } catch (e) {
+            // ignore
+        }
+    }
+    return 'http://localhost:8080';
+};
+
 // @route   POST /api/auth/signup
 // @desc    Register a new user (Girl only)
 // @access  Public
@@ -116,7 +138,7 @@ router.post('/signup', async (req, res) => {
                             girlId: user._id
                         })).toString('base64');
 
-                        const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
+                        const inviteLink = `${getFrontendUrl(req)}/invite?token=${inviteToken}`;
 
                         console.log('\n==================================================');
                         console.log('       DEVELOPMENT: GUARDIAN INVITATION CREATED    ');
@@ -371,7 +393,7 @@ router.post('/add-contact', authMiddleware, async (req, res) => {
                 girlId: user._id
             })).toString('base64');
 
-            const inviteLink = `http://localhost:8080/invite?token=${inviteToken}`;
+            const inviteLink = `${getFrontendUrl(req)}/invite?token=${inviteToken}`;
 
             console.log('\n==================================================');
             console.log('       DEVELOPMENT: GUARDIAN INVITATION CREATED    ');

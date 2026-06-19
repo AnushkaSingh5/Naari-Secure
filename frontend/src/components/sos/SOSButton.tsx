@@ -4,12 +4,14 @@ import { useApp } from '@/contexts/AppContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 
 
 const SOSButton = () => {
   const { isSosActive, activateSOS, deactivateSOS } = useApp();
   const { user } = useAuth();
   const { t } = useLanguage();
+  const { toast } = useToast();
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -39,8 +41,13 @@ const SOSButton = () => {
       });
       deactivateSOS();
     } catch (error) {
-      console.error("Failed to cancel SOS", error);
-      alert("Failed to cancel SOS. Please try again.");
+      console.error("Failed to cancel SOS on server", error);
+      toast({
+        title: "SOS Deactivated Locally",
+        description: "Could not sync with server, but SOS has been deactivated on this device.",
+        variant: "destructive"
+      });
+      deactivateSOS();
     }
   };
 

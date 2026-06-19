@@ -322,23 +322,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         });
 
         if (!res.ok) {
-          throw new Error('Failed to stop travel mode on server');
+          console.warn('Failed to stop travel mode on server');
         }
       }
-
-      setState(prev => ({
-        ...prev,
-        isTravelModeOn: false,
-        hasNotifiedHighRisk: false,
-        currentDestination: null,
-        expectedArrivalTime: null,
-        travelSessions: prev.travelSessions.map((s, i) =>
-          i === 0 ? { ...s, endTime: new Date(), status: completed ? 'completed' : 'sos' } : s
-        ),
-      }));
     } catch (error) {
-      console.error("Failed to stop travel mode", error);
+      console.error("Failed to stop travel mode on server, deactivating locally", error);
+      toast({
+        title: "Travel Mode Stopped Locally",
+        description: "Could not sync with server, but travel mode has been turned off on this device.",
+        variant: "destructive"
+      });
     }
+
+    setState(prev => ({
+      ...prev,
+      isTravelModeOn: false,
+      hasNotifiedHighRisk: false,
+      currentDestination: null,
+      expectedArrivalTime: null,
+      travelSessions: prev.travelSessions.map((s, i) =>
+        i === 0 ? { ...s, endTime: new Date(), status: completed ? 'completed' : 'sos' } : s
+      ),
+    }));
   };
 
 

@@ -81,6 +81,31 @@ const EmergencyContactsCard = () => {
     }
   };
 
+  const handleCopyInviteLink = (contact: any) => {
+    if (!contact.guardianId || !user?._id) return;
+    try {
+      const inviteToken = btoa(JSON.stringify({
+        guardianId: contact.guardianId,
+        girlId: user._id
+      }));
+      const base = window.location.origin + window.location.pathname.replace(/\/(login|profile|travel|safe-zones)?\/?$/, '');
+      const inviteLink = `${base}/invite?token=${inviteToken}`;
+      
+      navigator.clipboard.writeText(inviteLink);
+      toast({
+        title: "Invite Link Copied",
+        description: "Send this link to your guardian to activate their account.",
+      });
+    } catch (err) {
+      console.error("Failed to copy invite link", err);
+      toast({
+        title: "Copy Failed",
+        description: "Could not generate or copy the link.",
+        variant: "destructive"
+      });
+    }
+  };
+
   const handleRemoveContact = async (contactId: string) => {
     if (!window.confirm("Are you sure you want to remove this guardian?")) return;
 
@@ -177,6 +202,14 @@ const EmergencyContactsCard = () => {
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-border/50">
+                {contact.status === 'pending' && contact.guardianId && (
+                  <button
+                    onClick={() => handleCopyInviteLink(contact)}
+                    className="p-2 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center gap-2 text-xs font-medium"
+                  >
+                    Copy Invite
+                  </button>
+                )}
                 <a
                   href={`tel:${contact.phone}`}
                   className="p-2 rounded-lg bg-safe/10 hover:bg-safe/20 text-safe transition-colors flex items-center gap-2 text-xs font-medium"
